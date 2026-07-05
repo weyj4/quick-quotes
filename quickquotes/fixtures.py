@@ -15,7 +15,7 @@ Note what's messy on purpose:
   - quantity is "one truckload"   -> needs the truckload calculator
   - dims stated bare              -> units/convention need normalizing defaults
 """
-from quote_spec import (
+from quickquotes.quote_spec import (
     Board, Dimensions, PrintSpec, Provenance, Quantity, QuoteSpec, SpecField,
 )
 
@@ -125,3 +125,21 @@ def draft_spec_fixture() -> QuoteSpec:
             # units + calc_basis filled by the truckload calculator
         ),
     )
+
+
+RAW_EMAIL = """\
+From:    orders@acmefoods.example
+To:      quotes@yourboxplant.example
+Subject: need pricing
+
+Hey --
+
+Can you quote us a truckload of the 12x10x8 RSCs, 32 ECT,
+2-color print like the last run. Same artwork.
+
+Need it pretty quick, we're comparing a couple suppliers.
+
+Thanks,
+Dana
+Acme Foods purchasing
+"""

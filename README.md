@@ -9,26 +9,61 @@ START → complete_validate ──(gaps / unconfirmed defaults / blocking flags)
         complete_validate ──(clean)──→ price (freeze + CoreERP stub) → END
 ```
 
-## Run
+## Layout
+
+```
+quickquotes/   the agent: spec, nodes, graph, fixtures (importable package)
+api/           FastAPI delivery mechanism (one of several possible)
+ui/            Vite + React + TS estimator workbench (own toolchain)
+tests/         invariants on the deterministic core; no LLM tests by design
+run_demo.py    CLI walkthrough of the interrupt/resume loop
+```
+
+## Run the CLI demo
 
 ```bash
-pip install langgraph pydantic
-python run_demo.py
+uv sync --extra api --extra dev     # or: pip install -e ".[api,dev]"
+uv run run_demo.py                  # or: python run_demo.py
+uv run pytest                       # 7 invariant tests on the deterministic core
 ```
 
 The demo deliberately resumes the first interrupt with *partial* answers to
 show the loop re-interrupting — pricing is unreachable until the artifact is
 clean.
 
+## Run the workbench (API + UI)
+
+```bash
+cd ui && npm install && npm run build && cd ..
+uv run uvicorn api.main:app --port 8000
+# open http://localhost:8000
+```
+
+Dev mode with hot reload: `uvicorn api.main:app --reload --port 8000` in one
+terminal, `cd ui && npm run dev` in another (Vite proxies `/api` to :8000).
+
+Flow in the UI: **Load quote request** → draft spec renders with provenance
+badges (hover a badge for its source), one red gap input (ship-to), amber
+Confirm buttons for the defaults → **Apply answers & revalidate** → partial
+answers re-interrupt, full answers freeze the spec and render the quote card
+with its `spec_hash`.
+
 ## Files
 
-- `quote_spec.py` — `QuoteSpec` with provenance-carrying `SpecField[T]`
-  (extracted / resolved / defaulted / inferred / calculated / human_confirmed)
-- `fixtures.py` — plant master data + a draft spec as `extract_resolve` would
-  emit it from a messy email ("truckload of 12x10x8 RSCs, 32 ECT, like last run")
-- `nodes.py` — deterministic validation passes, `clarify` interrupt, `price`
-  stub, and the pure routing predicate
-- `run_demo.py` — graph assembly + two-interrupt demo run
+- `quickquotes/quote_spec.py` — `QuoteSpec` with provenance-carrying
+  `SpecField[T]` (extracted / resolved / defaulted / inferred / calculated /
+  human_confirmed)
+- `quickquotes/fixtures.py` — plant master data + a draft spec as
+  `extract_resolve` would emit it from a messy email
+- `quickquotes/nodes.py` — deterministic validation passes, `clarify`
+  interrupt, `price` stub, and the pure routing predicate
+- `quickquotes/graph.py` — graph assembly (shared by CLI demo and API)
+- `quickquotes/__init__.py` — the public surface: `QuoteSpec`, `SpecField`,
+  `Provenance`, `build_graph`, `get_field`, `set_field`
+- `api/main.py` — `POST /api/quotes`, `GET /api/quotes/{id}`,
+  `POST /api/quotes/{id}/resume`; serves `ui/dist` when built
+- `ui/` — provenance badges, gap inputs, confirm chips, quote card. Tokens
+  at the top of `ui/src/styles.css` — restyling is a five-minute job.
 
 ## Design invariants (property-test targets)
 

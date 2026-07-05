@@ -17,8 +17,8 @@ from typing import TypedDict
 
 from langgraph.types import interrupt
 
-import fixtures as fx
-from quote_spec import (
+from quickquotes import fixtures as fx
+from quickquotes.quote_spec import (
     BLOCKING_FLAGS, CONFIRMATION_REQUIRED_PROVENANCE, REQUIRED_PATHS,
     Provenance, QuoteSpec, SpecField, get_field, set_field,
 )

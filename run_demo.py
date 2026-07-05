@@ -9,33 +9,10 @@ from __future__ import annotations
 
 import json
 
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command
 
-from fixtures import draft_spec_fixture
-from nodes import (GraphState, clarify, complete_validate, price,
-                   route_after_validation)
-
-
-def build_graph():
-    g = StateGraph(GraphState)
-    g.add_node("complete_validate", complete_validate)
-    g.add_node("clarify", clarify)
-    g.add_node("price", price)
-
-    g.add_edge(START, "complete_validate")
-    g.add_conditional_edges(
-        "complete_validate",
-        route_after_validation,               # nodes do work; edges route
-        {"clarify": "clarify", "price": "price"},
-    )
-    g.add_edge("clarify", "complete_validate")  # corrections re-enter validation
-    g.add_edge("price", END)
-
-    # In prod on Cloud Run this is a Postgres checkpointer (Cloud SQL) —
-    # approval is async and containers are stateless. MemorySaver for the demo.
-    return g.compile(checkpointer=MemorySaver())
+from quickquotes.fixtures import draft_spec_fixture
+from quickquotes.graph import build_graph
 
 
 def show_spec(spec, title):
@@ -45,7 +22,7 @@ def show_spec(spec, title):
     print(f"flags: {spec.validation_flags}")
     for path in ("board.flute", "board.board_code", "quantity.units",
                  "quantity.calc_basis", "ship_to"):
-        from quote_spec import get_field
+        from quickquotes.quote_spec import get_field
         f = get_field(spec, path)
         prov = f.provenance.value if f.provenance else "—"
         print(f"  {path:22} = {str(f.value):42.42} [{prov}]")
