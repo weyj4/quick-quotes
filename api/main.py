@@ -21,7 +21,7 @@ from langgraph.types import Command
 from pydantic import BaseModel
 
 from quickquotes import build_graph
-from quickquotes.fixtures import RAW_EMAIL, draft_spec_fixture
+from quickquotes.fixtures import RAW_EMAIL
 
 app = FastAPI(title="Quick Quotes")
 app.add_middleware(
@@ -41,6 +41,11 @@ class ResumeBody(BaseModel):
     answers: dict[str, object]
 
 
+class StartBody(BaseModel):
+    email: str | None = None
+    sender: str | None = None
+
+
 def snapshot(thread_id: str) -> dict:
     """Serialize current graph state for the UI."""
     config = {"configurable": {"thread_id": thread_id}}
@@ -58,6 +63,7 @@ def snapshot(thread_id: str) -> dict:
     return {
         "thread_id": thread_id,
         "raw_request": RAW_BY_THREAD.get(thread_id, ""),
+        "extractor": state.values.get("extractor_name"),
         "spec": spec.model_dump(mode="json"),
         "quote": quote,
         "pending": pending,
@@ -65,15 +71,29 @@ def snapshot(thread_id: str) -> dict:
     }
 
 
+DEMO_SENDER = "orders@acmefoods.example"
+
+
+def _sender_from_email(text: str) -> str | None:
+    for line in text.splitlines():
+        if line.lower().startswith("from:"):
+            return line.split(":", 1)[1].strip().strip("<>")
+    return None
+
+
 @app.post("/api/quotes")
-def start_quote() -> dict:
-    """Start a new quote thread. Demo: the fixture email's draft spec stands in
-    for extract_resolve output; in the full build this endpoint accepts the raw
-    email/attachments and the graph runs intake -> extract_resolve first."""
+def start_quote(body: StartBody | None = None) -> dict:
+    """Start a quote thread from a raw email. The graph runs
+    extract_resolve -> complete_validate and pauses at the first review.
+    No body -> the demo fixture email."""
+    raw = (body.email if body and body.email else RAW_EMAIL)
+    sender = (body.sender if body and body.sender else None)         or _sender_from_email(raw) or DEMO_SENDER
+
     thread_id = f"q-{uuid.uuid4().hex[:8]}"
-    RAW_BY_THREAD[thread_id] = RAW_EMAIL
+    RAW_BY_THREAD[thread_id] = raw
     config = {"configurable": {"thread_id": thread_id}}
-    graph.invoke({"spec": draft_spec_fixture(), "quote": None}, config)
+    graph.invoke({"raw_request": raw, "sender": sender,
+                  "spec": None, "quote": None}, config)
     return snapshot(thread_id)
 
 

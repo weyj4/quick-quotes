@@ -24,9 +24,12 @@ from quickquotes.quote_spec import (
 )
 
 
-class GraphState(TypedDict):
-    spec: QuoteSpec
+class GraphState(TypedDict, total=False):
+    raw_request: str
+    sender: str | None
+    spec: QuoteSpec | None
     quote: dict | None
+    extractor_name: str
 
 
 # ------------------------------------------------------ deterministic passes
@@ -125,6 +128,18 @@ def finalize_gap_report(spec: QuoteSpec) -> QuoteSpec:
 
 
 # ------------------------------------------------------------------- nodes
+def extract_resolve(state: GraphState) -> GraphState:
+    """The one LLM stage: raw request -> draft QuoteSpec, then deterministic
+    resolution against master data / order history. Everything downstream of
+    the returned draft is deterministic."""
+    from quickquotes.extraction import get_extractor, map_extraction_to_spec
+
+    extractor = get_extractor()
+    extraction = extractor.extract(state["raw_request"])
+    spec = map_extraction_to_spec(extraction, state.get("sender"))
+    return {"spec": spec, "extractor_name": extractor.name}
+
+
 def complete_validate(state: GraphState) -> GraphState:
     spec = state["spec"].model_copy(deep=True)
     for step in (apply_defaults, derive_quantities,

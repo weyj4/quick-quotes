@@ -23,7 +23,8 @@ export default function App() {
     }
   }, []);
 
-  const onStart = () => run(startQuote);
+  const [draft, setDraft] = useState("");
+  const onStart = () => run(() => startQuote(draft.trim() || undefined));
   const onApply = () => {
     if (!thread) return;
     run(() => resumeQuote(thread.thread_id, answers));
@@ -44,20 +45,39 @@ export default function App() {
           <span className="brand-name">Quick Quotes</span>
           <span className="brand-sub">Estimator Workbench</span>
         </div>
-        <button className="btn-primary" onClick={onStart} disabled={busy}>
-          {thread ? "New quote request" : "Load quote request"}
-        </button>
+        {thread && (
+          <button
+            className="btn-primary"
+            onClick={() => setThread(null)}
+            disabled={busy}
+          >
+            New quote request
+          </button>
+        )}
       </header>
 
       {error && <div className="banner-error">{error}</div>}
 
       {!thread ? (
-        <div className="empty">
-          <p>No quote request loaded.</p>
+        <div className="intake">
+          <h2>Inbound quote request</h2>
           <p className="empty-sub">
-            Load the demo request to see the agent's draft spec — every field
-            tagged with where its value came from.
+            Paste a quote request email — or run the demo request — and the
+            agent drafts a spec with every field tagged with where its value
+            came from.
           </p>
+          <textarea
+            className="intake-input"
+            rows={10}
+            placeholder={"From: buyer@customer.example\nSubject: quote please\n\nNeed a truckload of 12x10x8 RSCs, 32 ECT, 2-color like the last run..."}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <div className="intake-actions">
+            <button className="btn-primary" onClick={onStart} disabled={busy}>
+              {draft.trim() ? "Run quote request" : "Run demo request"}
+            </button>
+          </div>
         </div>
       ) : (
         <main className="workbench">
@@ -71,6 +91,11 @@ export default function App() {
                   {thread.spec.status}
                 </span>
               </h2>
+              {thread.extractor && (
+                <span className="mono spec-status">
+                  extractor: {thread.extractor}
+                </span>
+              )}
               {thread.spec.validation_flags.length > 0 && (
                 <div className="flags">
                   {thread.spec.validation_flags.map((f) => (

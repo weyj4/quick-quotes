@@ -143,3 +143,17 @@ Thanks,
 Dana
 Acme Foods purchasing
 """
+
+
+# lookup tables used by extract_resolve's deterministic resolution
+DOMAIN_TO_ACCOUNT = {
+    "acmefoods.example": "ACME-FOODS",
+}
+
+ORDER_HISTORY = {
+    "ACME-FOODS": [
+        {"spec_id": "SPEC-4471", "date": "2026-03",
+         "style": "RSC", "dims": (12.0, 10.0, 8.0),
+         "artwork_ref": "SPEC-4471/artwork"},
+    ],
+}

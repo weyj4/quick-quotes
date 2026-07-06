@@ -19,12 +19,32 @@ tests/         invariants on the deterministic core; no LLM tests by design
 run_demo.py    CLI walkthrough of the interrupt/resume loop
 ```
 
+## Extraction (the one LLM stage)
+
+`quickquotes/extraction.py` implements `extract_resolve`:
+
+- The model emits an **extraction-only schema** — value + confidence +
+  verbatim evidence, everything nullable. It cannot emit provenance:
+  `EXTRACTED` is stamped by mapping code, `RESOLVED` only by lookups
+  (sender domain -> customer master, "like the last run" -> order history).
+- **Gap discipline**: the prompt forbids guessing, the schema has no field a
+  default could hide in, and `complete_validate` re-derives anything
+  derivable downstream.
+- **Two extractors**: `GeminiExtractor` (google-genai, structured output,
+  temperature 0) when `GOOGLE_API_KEY` / `GEMINI_API_KEY` or Vertex env vars
+  are set; deterministic `StubExtractor` otherwise (offline demo + CI).
+  `QQ_GEMINI_MODEL` overrides the model (default `gemini-2.5-flash`).
+- `tests/test_extraction.py` is the **acceptance bar for any extractor**:
+  the fixture email is the golden input, and the assertions (golden values,
+  gaps stay gaps, provenance minting rules, evidence + confidence present)
+  apply equally to the stub and the live model.
+
 ## Run the CLI demo
 
 ```bash
 uv sync --extra api --extra dev     # or: pip install -e ".[api,dev]"
 uv run run_demo.py                  # or: python run_demo.py
-uv run pytest                       # 7 invariant tests on the deterministic core
+uv run pytest                       # 14 tests: invariants + extraction golden tests
 ```
 
 The demo deliberately resumes the first interrupt with *partial* answers to
@@ -57,7 +77,10 @@ with its `spec_hash`.
   `extract_resolve` would emit it from a messy email
 - `quickquotes/nodes.py` — deterministic validation passes, `clarify`
   interrupt, `price` stub, and the pure routing predicate
-- `quickquotes/graph.py` — graph assembly (shared by CLI demo and API)
+- `quickquotes/extraction.py` — extraction schema, prompt, Gemini + stub
+  extractors, deterministic mapping/resolution
+- `quickquotes/graph.py` — graph assembly; conditional entry (raw request ->
+  extraction; injected spec -> straight to validation)
 - `quickquotes/__init__.py` — the public surface: `QuoteSpec`, `SpecField`,
   `Provenance`, `build_graph`, `get_field`, `set_field`
 - `api/main.py` — `POST /api/quotes`, `GET /api/quotes/{id}`,

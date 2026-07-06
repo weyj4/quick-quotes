@@ -12,7 +12,11 @@ async function req(path: string, init?: RequestInit): Promise<QuoteThread> {
   return res.json();
 }
 
-export const startQuote = () => req("/api/quotes", { method: "POST" });
+export const startQuote = (email?: string) =>
+  req("/api/quotes", {
+    method: "POST",
+    body: JSON.stringify(email ? { email } : {}),
+  });
 
 export const getQuote = (threadId: string) => req(`/api/quotes/${threadId}`);
 

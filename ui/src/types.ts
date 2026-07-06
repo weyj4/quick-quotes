@@ -48,6 +48,7 @@ export interface PendingReview {
 export interface QuoteThread {
   thread_id: string;
   raw_request: string;
+  extractor: string | null;
   spec: QuoteSpec;
   quote: Quote | null;
   pending: PendingReview | null;

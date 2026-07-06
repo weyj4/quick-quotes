@@ -256,3 +256,27 @@ button:focus-visible { outline: 2px solid var(--kraft); outline-offset: 2px; }
     to { opacity: 1; transform: none; }
   }
 }
+
+/* --------------------------------------------------------------- intake */
+.intake {
+  max-width: 720px;
+  margin: 40px auto 0;
+  padding: 0 24px;
+}
+.intake h2 { margin: 0 0 6px; font-size: 18px; }
+
+.intake-input {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  resize: vertical;
+}
+.intake-input:focus-visible { outline: 2px solid var(--kraft); outline-offset: 1px; }
+
+.intake-actions { margin-top: 12px; display: flex; justify-content: flex-end; }

@@ -11,7 +11,7 @@ import json
 
 from langgraph.types import Command
 
-from quickquotes.fixtures import draft_spec_fixture
+from quickquotes.fixtures import RAW_EMAIL
 from quickquotes.graph import build_graph
 
 
@@ -32,9 +32,11 @@ def main():
     graph = build_graph()
     config = {"configurable": {"thread_id": "quote-demo-001"}}
 
-    # ---- turn 1: run until the graph interrupts for clarification ----------
+    # ---- turn 1: raw email -> extract_resolve -> validate -> interrupt -----
     result = graph.invoke(
-        {"spec": draft_spec_fixture(), "quote": None}, config)
+        {"raw_request": RAW_EMAIL, "sender": "orders@acmefoods.example",
+         "spec": None, "quote": None}, config)
+    print(f"extractor: {result.get('extractor_name')}")
 
     show_spec(result["spec"], "after complete_validate (pre-interrupt)")
 
