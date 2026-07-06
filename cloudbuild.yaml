@@ -1,0 +1,42 @@
+# Build -> Artifact Registry -> Cloud Run, in one trigger.
+# Assumes an Artifact Registry docker repo named "quickquotes" exists in
+# ${_REGION} (create once: Artifact Registry > Create repository > Docker).
+substitutions:
+  _REGION: us-east4
+  _SERVICE: quickquotes
+  _IMAGE: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/quickquotes/app
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_IMAGE}:${SHORT_SHA}", "-t", "${_IMAGE}:latest", "."]
+
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "--all-tags", "${_IMAGE}"]
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_IMAGE}:${SHORT_SHA}
+      - --region=${_REGION}
+      - --allow-unauthenticated
+      # demo-critical: MemorySaver holds quote threads in process memory.
+      # One warm instance = threads survive between demo clicks. The
+      # production answer is the Postgres checkpointer on Cloud SQL.
+      - --min-instances=1
+      - --max-instances=1
+      - --memory=1Gi
+      # Vertex mode: GeminiExtractor authenticates via the service account —
+      # no API keys in the image or env. Grant the service's runtime SA
+      # roles/aiplatform.user.
+      - --set-env-vars=GOOGLE_GENAI_USE_VERTEXAI=true,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${_REGION}
+
+images:
+  - ${_IMAGE}:${SHORT_SHA}
+  - ${_IMAGE}:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
