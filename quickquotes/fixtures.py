@@ -157,3 +157,31 @@ ORDER_HISTORY = {
          "artwork_ref": "SPEC-4471/artwork"},
     ],
 }
+
+GOLDEN_EMAIL = """\
+From: orders@acmefoods.example
+Subject: need pricing
+
+Hey — can you quote us a truckload of the 12x10x8 RSCs, 32 ECT,
+2-color print like the last run. Same artwork.
+
+Thanks, Dana
+"""
+
+CLEANER_EXTRACTION_EMAIL = """\
+From: orders@acmefoods.example
+Subject: RSC quote request
+
+Hi — need pricing on 5,000 units, RSC, 14 x 11 x 9, 32 ECT C-flute,
+1-color light coverage. Deliver to ACME-PLANT-2 please.
+
+Dana, Acme purchasing
+"""
+
+CAPACITY_CHECK_EMAIL = """\
+From: orders@acmefoods.example
+Subject: small run
+
+Can you do 300 boxes, 10x10x10 RSC, 32 ECT, 4-color heavy coverage?
+Ship to ACME-PLANT-1.
+"""
