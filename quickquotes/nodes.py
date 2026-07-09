@@ -142,6 +142,7 @@ def extract_resolve(state: GraphState) -> GraphState:
 
 def complete_validate(state: GraphState) -> GraphState:
     spec = state["spec"].model_copy(deep=True)
+    spec.validation_flags = []
     for step in (apply_defaults, derive_quantities,
                  resolve_master_data, run_checks, finalize_gap_report):
         spec = step(spec)

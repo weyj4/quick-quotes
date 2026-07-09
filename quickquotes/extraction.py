@@ -202,6 +202,24 @@ def get_extractor() -> Extractor:
         return GeminiExtractor()
     return StubExtractor()
 
+# Canonicalization: the model extracts VERBATIM (evidence discipline); master
+# data lookups are EXACT matches. This deterministic code layer bridges the
+# two. Verbatim text survives in the SpecField note; only .value is canonical.
+def _canon_style(v: str) -> str:
+    s = re.sub(r"[^A-Za-z]", "", v).upper()
+    if s.endswith("S") and s[:-1] in fx.SUPPORTED_STYLES:
+        s = s[:-1]                                    # "RSCs" -> "RSC"
+    return s
+
+
+def _canon_flute(v: str) -> str:
+    s = re.sub(r"(?i)[\s\-]*(flutes?|double[\s\-]?wall)", "", v.strip())
+    return re.sub(r"[^A-Za-z]", "", s).upper()        # "C-flute" -> "C", "BC double-wall" -> "BC"
+
+
+def _canon_basis(v: str) -> str:
+    return v.strip().lower()                          # "ECT" -> "ect"
+
 
 # ------------------------------------------- deterministic mapping + lookups
 def _sf(xf, cast=None) -> SpecField:
@@ -223,15 +241,18 @@ def map_extraction_to_spec(x: ExtractionResult, sender: str | None) -> QuoteSpec
     provenances minted here are EXTRACTED (model) and RESOLVED (lookups)."""
     spec = QuoteSpec()
 
-    spec.style = _sf(x.style)
+    # spec.style = _sf(x.style)
+    spec.style = _sf(x.style, _canon_style)
     spec.dimensions.length = _sf(x.length_in)
     spec.dimensions.width = _sf(x.width_in)
     spec.dimensions.depth = _sf(x.depth_in)
     spec.dimensions.units = _sf(x.dim_units)
     spec.dimensions.convention = _sf(x.dim_convention)
     spec.board.strength_spec = _sf(x.strength_spec)
-    spec.board.strength_basis = _sf(x.strength_basis)
-    spec.board.flute = _sf(x.flute)
+    # spec.board.strength_basis = _sf(x.strength_basis)
+    spec.board.strength_basis = _sf(x.strength_basis, _canon_basis)
+    # spec.board.flute = _sf(x.flute)
+    spec.board.flute = _sf(x.flute, _canon_flute)
     spec.print_spec.colors = _sf(x.print_colors, int)
     spec.print_spec.coverage = _sf(x.print_coverage)
     spec.quantity.as_requested = _sf(x.quantity_text)
