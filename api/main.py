@@ -18,6 +18,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from langgraph.types import Command
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
 from quickquotes import build_graph
@@ -91,7 +92,12 @@ def start_quote(body: StartBody | None = None) -> dict:
 
     thread_id = f"q-{uuid.uuid4().hex[:8]}"
     RAW_BY_THREAD[thread_id] = raw
-    config = {"configurable": {"thread_id": thread_id}}
+    config: RunnableConfig = {
+        "configurable": {"thread_id": thread_id},
+        "run_name": "quote_request",
+        "tags": ["quickquotes", "gemini"],
+        "metadata": {"sender": sender or "unknown"},
+    }
     graph.invoke({"raw_request": raw, "sender": sender,
                   "spec": None, "quote": None}, config)
     return snapshot(thread_id)
@@ -104,7 +110,9 @@ def get_quote(thread_id: str) -> dict:
 
 @app.post("/api/quotes/{thread_id}/resume")
 def resume_quote(thread_id: str, body: ResumeBody) -> dict:
-    config = {"configurable": {"thread_id": thread_id}}
+    config: RunnableConfig = {"configurable": {"thread_id": thread_id},
+                          "run_name": "quote_resume",
+                          "tags": ["quickquotes"]}
     state = graph.get_state(config)
     if not state.values:
         raise HTTPException(404, f"no quote thread {thread_id}")

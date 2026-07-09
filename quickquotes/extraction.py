@@ -22,6 +22,7 @@ import os
 import re
 from typing import Optional, Protocol
 
+from langsmith import traceable
 from pydantic import BaseModel, Field as PField
 
 from quickquotes import fixtures as fx
@@ -110,6 +111,8 @@ class GeminiExtractor:
         self.model = model or os.environ.get("QQ_GEMINI_MODEL",
                                              "gemini-2.5-flash")
 
+    @traceable(name="gemini_extract", run_type="llm",
+               metadata={"model": "gemini-2.5-flash"})
     def extract(self, raw_request: str) -> ExtractionResult:
         resp = self.client.models.generate_content(
             model=self.model,
